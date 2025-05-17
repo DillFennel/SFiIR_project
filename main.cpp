@@ -1,5 +1,7 @@
 #include <iostream>
 #include <random>
+#include <fstream>
+#include <list>
 
 using namespace std;
 
@@ -9,7 +11,7 @@ mt19937 gen(rd());
 
 struct LCG {
     int state;
-    LCG(int _seed){ 
+    LCG(int _seed){
         state = _seed;
         srand(_seed);
     }
@@ -22,21 +24,18 @@ struct LCG {
     int generate_t_p(){
         int r = generate_100();
         if(r < 25){
-            return 0;
-        }
-        if(r < 48){
             return 1;
         }
-        if(r < 69){
+        if(r < 48){
             return 2;
         }
-        if(r < 81){
+        if(r < 69){
             return 3;
         }
-        if(r < 90){
+        if(r < 81){
             return 4;
         }
-        if(r<100){
+        if(r < 90){
             return 5;
         }
         return 6;
@@ -44,49 +43,109 @@ struct LCG {
     int generate_t_obr(){
         int r = generate_100();
         if(r < 6){
-            return 0;
-        }
-        if(r < 21){
             return 1;
         }
-        if(r < 48){
+        if(r < 21){
             return 2;
         }
-        if(r < 77){
+        if(r < 48){
             return 3;
         }
-        if(r < 83){
+        if(r < 77){
             return 4;
         }
-        if(r < 100){
+        if(r < 83){
             return 5;
         }
         return 6;
     }
 };
-
-int main(){ // n - количество колонок
-    int n = 10000;
+int check_copy(bool t_func = 0, int seed = 10){
+        LCG lcg(seed);
+        int check_size = 100;
+        list<int> t_check, t_try;
+        for(int i =0; i< check_size; i++){
+                if(t_func){
+                        t_check.push_back(lcg.generate_t_p());
+                }
+                else{
+                        t_check.push_back(lcg.generate_t_obr());
+                }
+        }
+        for(int i =0; i< check_size; i++){
+                if(t_func){
+                        t_try.push_back(lcg.generate_t_p());
+                }
+                else{
+                        t_try.push_back(lcg.generate_t_obr());
+                }
+        }
+        for(int i=0;;i++){
+                auto t_check_i = t_check.begin();
+                auto t_try_i = t_try.begin();
+                while(t_try_i != t_try.end()){
+                        if(*t_check_i == *t_try_i){
+                                t_check_i++;
+                                t_try_i++;
+                        }
+                        else{
+                                break;
+                        }
+                }
+                if(t_try_i == t_try.end()){
+                        return i;
+                }
+                t_try.pop_front();
+                if(t_func){
+                        t_try.push_back(lcg.generate_t_p());
+                }
+                else{
+                        t_try.push_back(lcg.generate_t_obr());
+                }
+        }
+        return -1;
+}
+void make_data(int seed = 10){ // n - количество колок
+    int n = 9000; // Все кол-во запусков
+    int k = 3; // Кол-во отрезков для проверки
     LCG lcg(10);
     int t_p, t_obr;
-    vector<int> t_p_count(7, 0);
-    vector<int> t_obr_count(7, 0);
-    for(int i=0; i<n; i++){
-        t_p = lcg.generate_t_p();
-        t_obr =lcg.generate_t_obr();
-        t_p_count[t_p]++;
-        t_obr_count[t_obr]++;
+    vector<vector<int>> t_p_count(k, vector<int> (6, 0));
+    vector<vector<int>> t_obr_count(k, vector<int> (6, 0));
+    for(int k1=1; k1<k+1; k1++){
+        for(int i=n/k*(k1-1)+1; i<n/k*k1; i++){
+            t_p = lcg.generate_t_p();
+            t_obr =lcg.generate_t_obr();
+            t_p_count[k1-1][t_p-1]++;
+            t_obr_count[k1-1][t_obr-1]++;
+        }
     }
-    int pre = 0;
-    cout << "t_p" <<endl;
-    for(int i = 0; i< 7; i++){
-        pre += t_p_count[i]*100/n;
-        cout << i << ": " << t_p_count[i] << " " << t_p_count[i]*100/n << " " << pre << endl;
+    int pre;
+    std::ofstream fout;          // поток для записи
+    fout.open("data.txt");      // открываем файл для записиout.open("data.txt");
+    fout << n << " " << k << endl;
+    fout << "t_p" <<endl;
+    for(int k1 = 0; k1 < k; k1++){
+        fout << "k: " << k1 << endl;
+        pre = 0;
+        for(int i = 0; i< 6; i++){
+                pre += t_p_count[k1][i]*100/n;
+                fout << i+1 << ": " << t_p_count[k1][i] << " " << t_p_count[k1][i]*100/n << " " << pre << endl;
+        }
     }
-    cout << "t_obr" <<endl;
-    pre = 0;
-    for(int i = 0; i< 7; i++){
-        pre += t_obr_count[i]*100/n;
-        cout << i << ": " << t_obr_count[i] << " " << t_obr_count[i]*100/n << " " <<pre << endl;
+    cout << "t_k done" << endl;
+    fout << "t_obr" <<endl;
+    for(int k1=0; k1<k; k1++){
+        fout << "k: " << k1 << endl;
+        pre = 0;
+        for(int i = 0; i< 6; i++){
+            pre += t_obr_count[k1][i]*100/n;
+            fout << i+1 << ": " << t_obr_count[k1][i] << " " << t_obr_count[k1][i]*100/n << " " << pre << pre*100/n << endl;        }
     }
+    cout << "t_obr done" << endl;
+    fout.close();
+}
+int main(){ // n - количество колок
+        cout << "Раз в сколько запусков повторяется последовательность из 100 чисел для:"<<endl;
+        cout << "t_k: " << check_copy(0) << endl << "t_obr: " << check_copy(1) <<endl;
 }
