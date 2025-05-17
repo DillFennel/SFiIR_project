@@ -2,6 +2,7 @@
 #include <random>
 #include <fstream>
 #include <list>
+#include <unordered_set>
 
 using namespace std;
 
@@ -63,45 +64,32 @@ struct LCG {
 int check_copy(bool t_func = 0, int seed = 10){
         LCG lcg(seed);
         int check_size = 100;
-        list<int> t_check, t_try;
-        for(int i =0; i< check_size; i++){
+        unordered_set<string> prev_100;
+        string gen_100 = "";
+        int gen_last;
+        for(int i=0; i<check_size; i++){
                 if(t_func){
-                        t_check.push_back(lcg.generate_t_p());
+                        gen_last = lcg.generate_t_p();
                 }
                 else{
-                        t_check.push_back(lcg.generate_t_obr());
+                        gen_last = lcg.generate_t_obr();
                 }
+                gen_100 += to_string(gen_last);
         }
-        for(int i =0; i< check_size; i++){
+        prev_100.insert(gen_100);
+        for(int i = 0; ; i++){
                 if(t_func){
-                        t_try.push_back(lcg.generate_t_p());
+                        gen_last = lcg.generate_t_p();
                 }
                 else{
-                        t_try.push_back(lcg.generate_t_obr());
+                        gen_last = lcg.generate_t_obr();
                 }
-        }
-        for(int i=0;;i++){
-                auto t_check_i = t_check.begin();
-                auto t_try_i = t_try.begin();
-                while(t_try_i != t_try.end()){
-                        if(*t_check_i == *t_try_i){
-                                t_check_i++;
-                                t_try_i++;
-                        }
-                        else{
-                                break;
-                        }
-                }
-                if(t_try_i == t_try.end()){
+                gen_100.erase(0, 1);
+                gen_100 += to_string(gen_last);
+                if(prev_100.find(gen_100) != prev_100.end()){
                         return i;
                 }
-                t_try.pop_front();
-                if(t_func){
-                        t_try.push_back(lcg.generate_t_p());
-                }
-                else{
-                        t_try.push_back(lcg.generate_t_obr());
-                }
+                prev_100.insert(gen_100);
         }
         return -1;
 }
