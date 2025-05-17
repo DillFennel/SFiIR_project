@@ -2,7 +2,6 @@
 #include <random>
 #include <fstream>
 #include <list>
-#include <unordered_set>
 
 using namespace std;
 
@@ -64,7 +63,7 @@ struct LCG {
 int check_copy(bool t_func = 0, int seed = 10){
         LCG lcg(seed);
         int check_size = 100;
-        unordered_set<string> prev_100;
+        string check_100;
         string gen_100 = "";
         int gen_last;
         for(int i=0; i<check_size; i++){
@@ -76,7 +75,7 @@ int check_copy(bool t_func = 0, int seed = 10){
                 }
                 gen_100 += to_string(gen_last);
         }
-        prev_100.insert(gen_100);
+        check_100 = gen_100;
         for(int i = 0; ; i++){
                 if(t_func){
                         gen_last = lcg.generate_t_p();
@@ -86,10 +85,9 @@ int check_copy(bool t_func = 0, int seed = 10){
                 }
                 gen_100.erase(0, 1);
                 gen_100 += to_string(gen_last);
-                if(prev_100.find(gen_100) != prev_100.end()){
+                if( check_100 == gen_100){
                         return i;
                 }
-                prev_100.insert(gen_100);
         }
         return -1;
 }
