@@ -1,11 +1,11 @@
+#!/usr/bin/env python3
 import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(4, 3, figsize=(6, 8))  # 2 строки, 3 столбец
 axes[0][2].remove()
 axes[3][2].remove()
-with open('data.txt', 'r') as file:
+with open('test_distribution_data.txt', 'r') as file:
 	content = file.readlines()
-print(content[0])
 n, k = map(int, content[0].split(" "))
 t_p_y = []
 t_p_x = []
@@ -29,7 +29,6 @@ for k1 in range(0, k):
 		start += 1
 	start += 1
 start += 1
-print(content[start])
 for k1 in range(0, k):
 	t_obr_x.append([])
 	t_obr_y.append([])
@@ -40,9 +39,6 @@ for k1 in range(0, k):
 		t_obr_y_glob[i] += int(str[1])
 		start += 1
 	start += 1
-print(t_p_y, t_p_x)
-print(t_obr_y, t_obr_x)
-print(n)
 axes[0][0].set_title(f'Графики частоты появления чисел на выборке из {n} запусков')
 axes[0][0].set_xlabel('Ось х (значение t)')
 axes[0][0].set_ylabel('Ось y (частота появления)')
@@ -64,5 +60,4 @@ for y in range(1, 3):
 axes[3][0].set_title('Целевые графики t_p и t_obr, к которым нужно стремиться')
 axes[3][0].plot([1, 2, 3, 4, 5, 6],[25, 23, 21, 12, 9, 10], color = 'g') 
 axes[3][1].plot([1, 2, 3, 4, 5, 6],[6, 15, 27, 29, 6, 17], color = 'r')
-plt.legend()
 plt.show()
