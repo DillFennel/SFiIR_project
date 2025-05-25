@@ -10,52 +10,61 @@ using namespace std;
 
 LCG lcg;
 
-struct PentrolPump{
+struct PetrolPump{
         unsigned waiting;
         unsigned process;
         unsigned done;
 	int profit;
 	unsigned start;
         unsigned finish;
-	PentrolPump(){
+	unsigned wait_since;
+	PetrolPump(){
 		waiting = 0;
 		process = 0;
 		done = 0;
 		profit = 0;
 		start = 0;
 		finish = 0;
+		wait_since = 0;
 	}
 	void addWork(unsigned t){
 		assert(process == 0);
 		process++;
+		assert(process == 1);
 		start = t;
 		finish = t+lcg.generate_t_obr();
 	}
-	void addWait(){
+	void addWait(unsigned t){
 		assert(waiting == 0);
 		waiting++;
+		wait_since = t;
 	}
 	void doneWork() {
+		assert(process > 0);
 		process--;
 		done++;
 		profit++;
 		if(waiting > 0){
 			waiting--;
 			process++;
-			start = finish+1;
-			finish = lcg.generate_t_obr();
+			start = finish;
+			finish += lcg.generate_t_obr();
 		}
 	}
 };std::priority_queue<int, std::vector<int>, std::greater<int> > my_min_heap;
 struct Fact{
-	vector<PentrolPump> pumps;
+	vector<PetrolPump*> pumps;
 	int costs;
 	unsigned time;
 	int total_profit;
 	unsigned working_pumps;
 	unsigned waiting_pumps;
 	Fact(int n){
-		pumps.resize(n);
+		for(int i=0; i<n; i++){
+			auto pp = new PetrolPump();
+			pumps.push_back(pp);
+		}
+		assert(pumps.size() == n);
 		time = 0;
 		costs = 30*n+75;
 		total_profit = -costs;
@@ -67,16 +76,18 @@ struct Fact{
 			return ;
 		}
 		if(working_pumps < pumps.size()){
+			working_pumps++;
 			for(auto pp: pumps){
-				if(pp.process == 0){
-					pp.addWork(t);
+				if(pp->process == 0){
+					pp->addWork(t);
 					return ;
 				}
 			}
 		}
+		waiting_pumps++;
 		for(auto pp: pumps){
-			if(pp.waiting == 0){
-				pp.addWait();
+			if(pp->waiting == 0){
+				pp->addWait(t);
 				return ;
 			}
 		}
@@ -85,47 +96,102 @@ struct Fact{
 	}
 	void getDoneCars(unsigned t){
 		for(auto pp: pumps){
-			if (pp.finish = t-1) {
-				pp.doneWork();
+			 if (pp->process > 0 && pp->finish == t) {
+				pp->doneWork();
 				total_profit++;
+				if(pp->process > 0){
+					waiting_pumps--;
+				}
+				else {
+					working_pumps--;
+				}
 			}
 		}
 	}
 };
-void read_input(int *seed, unsigned *n_pentrol_pump, unsigned *n_try){
+void read_input(int *seed, unsigned *n_petrol_pump, unsigned *n_try){
 	cout << "Введите сид для генератора: ";std::priority_queue<int, std::vector<int>, std::greater<int> > my_min_heap;
 	cin >> *seed;
 	cout << "Введите максимально кол-во колонок: ";
-	cin >> *n_pentrol_pump;
+	cin >> *n_petrol_pump;
 	cout << "Введите кол-во генераций для каждого N: ";
 	cin >> *n_try;
 }
-void document(int n, int i_try, const Fact){
-	cout << 1 << endl;
+void document(int i_try, int n,  unsigned t, const Fact& fact){
+	cout << "N: " << n << ", Profit: " << fact.total_profit << endl;
+	cout << "\tPumps info: " <<endl;
+	cout << "\tCurrent waiting: " << fact.waiting_pumps << ", Current working: " << fact.working_pumps << endl;
+	for(int i = 0; i<fact.pumps.size(); i++){
+		cout << "\t\tWait: " << fact.pumps[i]->waiting << ", Since: " << fact.pumps[i]->wait_since<< ", In Process: " << fact.pumps[i]->process << ", Start: " << fact.pumps[i]->start << ", Finish: " << fact.pumps[i]->finish << ", Done: " << fact.pumps[i]->done << ", Profit: " << fact.pumps[i]->profit << endl;
+	}
 }
 int main(){
 	int seed;
-	unsigned n_pentrol_pump, n_try;
-	read_input(&seed, &n_pentrol_pump, &n_try);
+	unsigned n_petrol_pump, n_try;
+	read_input(&seed, &n_petrol_pump, &n_try);
 	lcg.addSeed(seed);
 	unsigned work_start = 0, work_end = 432;
 	std::ofstream fout;
     	fout.open("data.txt");
-	unsigned  arrival = lcg.generate_t_p();
-	for(int n = 1; n < n_pentrol_pump; n++) {
-		for (int i_try = 1; i_try < n_try; i_try++) {
-			Fact fact(n);
-			for (int t = 0; t<work_end; t++) {
-				Fact.getDoneCars(t);
-				if(arrival == 0){
-					Fact.carArrive(t);
-					arrival = lcg.generate_t_p();
-				}
-				else{
-					arrival--;
-				}
-				document(n, i_try, Fact);
+	for (int i_try = 0; i_try < n_try; i_try++) {
+		vector<Fact*> facts;
+		for(int n = 0; n < n_petrol_pump+1; n++) {
+			auto new_fact = new Fact(n);
+			facts.push_back(new_fact);
+		}
+		unsigned  arrival = lcg.generate_t_p();
+		for (int t = 0; t<work_end; t++) {
+			cout << "Current time: " << t << endl;
+			for(auto fact: facts){
+				fact->getDoneCars(t);
 			}
+			cout << "Arrival: " <<  arrival << endl;
+			if(arrival == 0){
+				cout << "Car arrived" <<endl;
+				for(auto fact: facts){
+                                	fact->carArrive(t);
+                        	}
+				arrival = lcg.generate_t_p();
+			}
+			else{
+				arrival--;
+			}
+			//for(auto fact: facts){
+                               // document(i_try, fact->pumps.size(), t, *fact);
+                        //}
+		}
+		for(auto fact: facts){
+			document(i_try, fact->pumps.size(), 432, *fact);
 		}
 	}
+	return 0;
+}
+void print_pumps(const vector<PetrolPump*> pumps){
+	for(auto pp: pumps){
+                cout <<"wait: " <<  pp->waiting << ", since: " <<pp->wait_since << ", process: " << pp->process << ", done: " << pp->done << ", start: " << pp->start << ", finish: " << pp->finish << ", profit: " << pp->profit << endl;        
+	}
+}
+int test_PetrolPump(){
+	vector<PetrolPump*> pumps;
+	for(int i=0; i<3; i++){
+		auto pp = new PetrolPump();
+		pumps.push_back(pp);
+	}
+	cout << "Начало" << endl;
+	print_pumps(pumps);
+	pumps[0]->addWork(0);
+	pumps[1]->addWork(0);
+	pumps[1]->addWait(2);
+	pumps[2]->addWork(2);
+	cout <<"На 0 приехала 1 машина, на 1 - 2 машины, на 3 - 1 машина" << endl;
+	print_pumps(pumps);
+	pumps[0]->doneWork();
+	pumps[1]->doneWork();
+	cout << "0 и 1 завершили обработку машин" << endl;
+	print_pumps(pumps);
+	pumps[1]->doneWork();
+        pumps[2]->doneWork();
+        cout << "1 и 2 завершили обработку машин" << endl;
+        print_pumps(pumps);
+	return 0;
 }
